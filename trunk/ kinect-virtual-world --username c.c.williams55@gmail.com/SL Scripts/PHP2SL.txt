@@ -1,0 +1,147 @@
+// Christian Williams UarkId 010537189  ccw005@uark.edu
+
+// AI Fall 2011 Hello World HW3
+
+// This program demonstrates using the http_in feature of second life to 
+// communicate to and from prims via a android device with turing.uark.edu
+// as the host php server.
+
+//////////////// User defined variables 
+string URL = "http://turing.csce.uark.edu/~ccw005/SecondLifeServer.php";
+key httpkey;
+key requestURL;
+string objectURL;
+integer listen_remove;
+
+// list representing colors for prims
+list colorsNumList = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9 ,1.0];
+
+//////////////// User defined funcions
+// get a random float from a list of floats
+float randomTenthsFloat()
+{
+    // randomize the list of floats
+    list shuffled = llListRandomize(colorsNumList,1);
+    // return this random float
+    return llList2Float(shuffled,0); 
+}
+
+// send this objects information to the php server.
+phpMethodSelect(string phpMethod)
+{
+     // Register with the php server by sending the address of this prim to the server with 
+     // the name of the prim to act as the primary key.
+     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"]
+                           ,"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
+}
+
+// the default state
+default
+{
+    
+    state_entry()
+    {                
+        llSay(0, "Hello, Avatar!");
+        // get the number of urls for the region.
+        integer freeurls = llGetFreeURLs();
+        //llSay(0,(string)freeurls);       
+        if(freeurls > 0)
+        {
+             //request a url for this object.
+            requestURL = llRequestURL();
+        }
+        else
+        {
+             llSay(0, "No urls available!");
+        }
+        // set up a key word for the object to listen for.
+        listen_remove = llListen(0,"",llGetOwner(), "");
+         
+    }
+    
+    // command line control of the registration process and server 
+    listen(integer channel, string name, key id, string message)
+    {
+       if(message == "remove")
+       {
+            phpMethodSelect("removePrim");
+       }
+       
+       if(message == "register")      
+       {     
+            phpMethodSelect("registerPrim");
+       }
+       
+       if(message == "url")
+       {
+            phpMethodSelect("getPrimUrl");    
+       }
+       
+       if(message == "list")
+       {
+            phpMethodSelect("getPrimList");    
+       }
+    }
+    
+    // not used for now...
+    touch_start(integer total_number)
+    {     
+     
+    }
+    
+    // get the responce from the server from any interactions
+    http_response(key id, integer status, list meta, string body)
+    {
+     if(httpkey == id)
+     {
+         llSay(0,body);
+     }           
+    }  
+    
+    // Parts of the following code method were taken from 
+    // http://wiki.secondlife.com/wiki/LSL_http_server/examples
+    http_request(key id, string method, string body)
+    {
+        if ((method == URL_REQUEST_GRANTED) && (id == requestURL) )
+        {
+            // An URL has been assigned to me.
+            llOwnerSay("Obtained URL: " + body);
+            objectURL = body;
+            // registor the prim with the server
+            phpMethodSelect("registerPrim");   
+            requestURL = NULL_KEY;
+        }
+ 
+ 
+        else if ((method == URL_REQUEST_DENIED) && (id == requestURL)) 
+        {
+            // I could not obtain a URL
+            llOwnerSay("There was a problem, and an URL was not assigned: " + body);
+            requestURL = NULL_KEY;
+        }
+ 
+        else if (method == "POST") 
+        {
+            // An incoming message was received.
+            //llOwnerSay("Received information from the outside: " + body);
+            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
+            if(body == "Color")
+            {
+                llSetColor(<randomTenthsFloat(), randomTenthsFloat(), randomTenthsFloat()>, ALL_SIDES); 
+            }
+            else
+            {
+                llSay(0,body);
+            }
+           
+        } 
+ 
+        else 
+        {
+            // An incoming message has come in using a method that has not been anticipated.
+            llHTTPResponse(id,405,"Unsupported Method");
+        }
+        
+    }
+    
+}
