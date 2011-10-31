@@ -1,4 +1,25 @@
 
+//Default Parameters for Object Type
+integer hole_shape = 0;
+vector cut = < 0, 1, 0>;
+float hollow = 0.0;
+vector twist = < 0, 0, 0>;
+vector top_size = < 1, 1, 0>;
+vector top_shear = < 0, 0, 0>;
+vector dimple = < 0, 1, 0>;
+vector hole_size = < .25, .25, 0>;
+vector advanced_cut = < 0, 1, 0>;
+vector taper = < 0, 0, 0>;
+float revolutions = 1;
+float radius_offset = 0;
+float skew = 0;
+
+list type1 = [hole_shape, cut, hollow, twist, top_size, top_shear];
+list type2 = [hole_shape, cut, hollow, twist, dimple ];
+list type3 = [hole_shape, cut, hollow, twist, hole_size, top_shear, advanced_cut, taper, revolutions, radius_offset, skew ]; 
+
+
+//---------------Change Functions--------------//
 changeColor(float r, float g, float b, integer side)
 {
     vector color = < r, g, b>;
@@ -26,8 +47,42 @@ changeRotation(float x, float y, float z)
     llSetRot(rot_xyzq);
 }
 
+changeObjType(string type)
+{
+    if(type == "box"){
+
+        llSetPrimitiveParams([PRIM_TYPE, PRIM_TYPE_BOX ]
+            + type1 );   
+    }else
+    if(type == "cylinder"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_CYLINDER]
+            + type1 );
+    }else
+    if(type == "prism"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_PRISM]
+            + type1 ); 
+    }else
+    if(type == "sphere"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_SPHERE]
+            + type2 );   
+    }else
+    if(type == "torus"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TORUS]
+            + type3 ); 
+    }else
+    if(type == "ring"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_RING]
+            + type3 );    
+    }else
+    if(type == "tube"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TUBE]
+            + type3 );    
+    }
+}
+    
 
 
+//--------Communcation and Command Interpreter-------//
 commString(string message){
     list command = llParseString2List(message,[" "],["."]);
     commList(command);
@@ -64,10 +119,17 @@ commList(list command){
         float y = (float) llList2String(command,2);
         float z = (float) llList2String(command,3);
         changeRotation(x, y, z);   
+    }else
+    if( comm == "type"){
+        string type =  llList2String(command,1);
+        changeObjType(type);
     }
+        
+    
 }
 
 
+//-------------States------------//
 default
 {
     state_entry()
