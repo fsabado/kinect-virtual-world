@@ -14,7 +14,7 @@ changeSize(float x, float y, float z)
 
 changeRotation(float x, float y, float z)
 {
-    vector xyz_angles = <0,1.0,0>; 
+    vector xyz_angles = <x,y,z>; 
     // This is to define a 1 degree change
     
     vector angles_in_radians = xyz_angles*DEG_TO_RAD; 
@@ -80,7 +80,7 @@ default
 
     touch_start(integer total_number)
     {
-        state touched;
+        //state touched;
     }
     
     listen(integer channel, string name, key id, string message)
