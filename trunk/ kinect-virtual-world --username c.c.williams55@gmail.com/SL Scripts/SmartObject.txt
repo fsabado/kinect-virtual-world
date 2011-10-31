@@ -1,0 +1,115 @@
+
+changeColor(float r, float g, float b, integer side)
+{
+    vector color = < r, g, b>;
+    llSay(0,"Changing color");
+    llSetColor(color,side);
+}
+
+changeSize(float x, float y, float z)
+{
+    vector scale = < x, y, z>;
+    llSetScale(scale);
+}
+
+changeRotation(float x, float y, float z)
+{
+    vector xyz_angles = <0,1.0,0>; 
+    // This is to define a 1 degree change
+    
+    vector angles_in_radians = xyz_angles*DEG_TO_RAD; 
+    // Change to Radians
+    
+    rotation rot_xyzq = llEuler2Rot(angles_in_radians); 
+    // Change to a Rotation
+   
+    llSetRot(rot_xyzq);
+}
+
+
+
+commString(string message){
+    list command = llParseString2List(message,[" "],["."]);
+    commList(command);
+}
+commList(list command){
+    
+    integer length = llGetListLength(command);
+    if(length == 0){
+        return;
+    }
+    string comm = llList2String(command,0);
+    
+    
+    if( comm == "color"){
+        float r = (float) llList2String(command,1);
+        float g = (float) llList2String(command,2);
+        float b = (float) llList2String(command,3);
+            
+        if(length != 5){
+            changeColor( r, g, b,ALL_SIDES); 
+        }else{
+            integer sides = (integer) llList2String(command,4);
+            changeColor( r, g, b, sides);
+        }     
+    }else 
+    if( comm == "size"){
+        float x = (float) llList2String(command,1);
+        float y = (float) llList2String(command,2);
+        float z = (float) llList2String(command,3);
+        changeSize(x, y, z);
+    }else
+    if( comm == "rotation"){
+        float x = (float) llList2String(command,1);
+        float y = (float) llList2String(command,2);
+        float z = (float) llList2String(command,3);
+        changeRotation(x, y, z);   
+    }
+}
+
+
+default
+{
+    state_entry()
+    {
+        llSay(0, "Hello, Avatar!");
+        llSetColor(<1.0, 1.0, 1.0>, ALL_SIDES);
+        llListen(0,"",llGetOwner(),"");
+        
+    }
+
+    touch_start(integer total_number)
+    {
+        state touched;
+    }
+    
+    listen(integer channel, string name, key id, string message)
+    {
+        llSay(0,"Interpreting: " + message);
+        commString(message);              
+    }
+}
+
+state touched
+{
+
+        state_entry()
+        {
+            llSay(0, "Touched.");
+            llSetColor(<0.0, 0.0, 0.0>, ALL_SIDES);
+            llListen(0,"",llGetOwner(),"");
+        }
+        touch_start(integer total_number)
+        {
+            state default;
+        }
+        
+        listen(integer channel, string name, key id, string message)
+        {
+        
+            if(message == "reset"){
+            llSay(0, "Resetting....");
+            state default;
+            }
+        }
+}
