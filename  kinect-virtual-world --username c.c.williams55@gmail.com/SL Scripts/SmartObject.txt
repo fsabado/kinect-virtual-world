@@ -1,38 +1,61 @@
 
-//Default Parameters for Object Type
-integer hole_shape = 0;
+//-----Default Parameters for Object Type-----//
+integer hole_shape = 0; 
 vector cut = < 0, 1, 0>;
+     //x < y (0 to 1.0), must be .5 difference; z ignored
 float hollow = 0.0;
+    //0.0 = solid , .95 max hollow
 vector twist = < 0, 0, 0>;
+    //-.5(-180) to .5(+180) ; x,y (z ignored)
 vector top_size = < 1, 1, 0>;
+    //0 = top  fully tapered, 1.0 = no tapering, 2.0 = bot full tapered, z ignored
 vector top_shear = < 0, 0, 0>;
+    //-.5 to .5 , x and y (z ignored)
 vector dimple = < 0, 1, 0>;
+    //0 to 1.0, x must be at least .05 less; only x and y
 vector hole_size = < .25, .25, 0>;
+    // x = (.05 to 1.0); y = .05 (large) to .5 (no hole)
 vector advanced_cut = < 0, 1, 0>;
+    //(0.0 to 1.0), x must be at least .05 smaller, only x and y
 vector taper = < 0, 0, 0>;
+    //-1.0 to 1.0 for both x and y (z ignored)
 float revolutions = 1;
+    //1.0 to 4.00
 float radius_offset = 0;
+    //depends on holesize.y and revolutions
 float skew = 0;
+    //-1.0 to 1.0
 
+//Combinational list for Object parameters
 list type1 = [hole_shape, cut, hollow, twist, top_size, top_shear];
+    //used for box,cylinder, and prism
 list type2 = [hole_shape, cut, hollow, twist, dimple ];
+    //used for sphere
 list type3 = [hole_shape, cut, hollow, twist, hole_size, top_shear, advanced_cut, taper, revolutions, radius_offset, skew ]; 
+    //used for torus, tube, and ring
 
+//Preferences
+integer editable = 1; // Denote if could be edited; 1 = true , 0 = false
 
 //---------------Change Functions--------------//
+//Change Color
+//param: float color( r = red, g = green, b = blue)
+//integer side( Look at the document for possible side values)
 changeColor(float r, float g, float b, integer side)
 {
     vector color = < r, g, b>;
     llSay(0,"Changing color");
     llSetColor(color,side);
 }
-
+//Change Size
+//param: float size( x, y, z) in meters
 changeSize(float x, float y, float z)
 {
     vector scale = < x, y, z>;
     llSetScale(scale);
 }
-
+//Change Rotation
+//param: float degree rotation( x, y, z)
 changeRotation(float x, float y, float z)
 {
     vector xyz_angles = <x,y,z>; 
@@ -46,34 +69,41 @@ changeRotation(float x, float y, float z)
    
     llSetRot(rot_xyzq);
 }
-
+//Change Object Type
+//param: string type = { box | cylinder | prism | sphere | torus | ring | tube}
 changeObjType(string type)
 {
+    //Box Type
     if(type == "box"){
-
         llSetPrimitiveParams([PRIM_TYPE, PRIM_TYPE_BOX ]
             + type1 );   
     }else
+    //Cylinder Type
     if(type == "cylinder"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_CYLINDER]
             + type1 );
     }else
+    //Prism Type
     if(type == "prism"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_PRISM]
             + type1 ); 
     }else
+    //Sphere Type
     if(type == "sphere"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_SPHERE]
             + type2 );   
     }else
+    //Torus Type
     if(type == "torus"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TORUS]
             + type3 ); 
     }else
+    //Ring Type
     if(type == "ring"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_RING]
             + type3 );    
     }else
+    //Tube Type
     if(type == "tube"){
         llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TUBE]
             + type3 );    
@@ -83,19 +113,21 @@ changeObjType(string type)
 
 
 //--------Communcation and Command Interpreter-------//
+//Communication to the object that takes a string
 commString(string message){
-    list command = llParseString2List(message,[" "],["."]);
+    list command = llParseString2List(message,[" "],[]); //Parse command
     commList(command);
 }
+//Communication to the object that takes a list
 commList(list command){
     
     integer length = llGetListLength(command);
     if(length == 0){
         return;
     }
-    string comm = llList2String(command,0);
+    string comm = llList2String(command,0); //command header
     
-    
+    //Change color
     if( comm == "color"){
         float r = (float) llList2String(command,1);
         float g = (float) llList2String(command,2);
@@ -108,21 +140,34 @@ commList(list command){
             changeColor( r, g, b, sides);
         }     
     }else 
+    //Change size
     if( comm == "size"){
         float x = (float) llList2String(command,1);
         float y = (float) llList2String(command,2);
         float z = (float) llList2String(command,3);
         changeSize(x, y, z);
     }else
+    //Change rotation
     if( comm == "rotation"){
         float x = (float) llList2String(command,1);
         float y = (float) llList2String(command,2);
         float z = (float) llList2String(command,3);
         changeRotation(x, y, z);   
     }else
+    //Change type
     if( comm == "type"){
         string type =  llList2String(command,1);
         changeObjType(type);
+    }else
+    //Change editable
+    if( comm == "turn"){
+        string button = llList2String(command, 1);
+        if( button == "on"){
+            editable = 1;    
+        }else
+        if( button == "off"){
+            editable = 0;
+        }
     }
         
     
@@ -145,33 +190,19 @@ default
         //state touched;
     }
     
+    //Command Listener
+    //Takes command if editable is 1, ignores if 0 unless turning on
     listen(integer channel, string name, key id, string message)
     {
-        llSay(0,"Interpreting: " + message);
-        commString(message);              
+        if( editable == 1){
+            llSay(0,"Interpreting: " + message);
+            commString(message); //Command is sent interpreter
+        }else{
+            if( message == "turn on"){
+                llSay(0, "Turning On!");
+                editable = 1;
+            }     
+        }         
     }
 }
 
-state touched
-{
-
-        state_entry()
-        {
-            llSay(0, "Touched.");
-            llSetColor(<0.0, 0.0, 0.0>, ALL_SIDES);
-            llListen(0,"",llGetOwner(),"");
-        }
-        touch_start(integer total_number)
-        {
-            state default;
-        }
-        
-        listen(integer channel, string name, key id, string message)
-        {
-        
-            if(message == "reset"){
-            llSay(0, "Resetting....");
-            state default;
-            }
-        }
-}
