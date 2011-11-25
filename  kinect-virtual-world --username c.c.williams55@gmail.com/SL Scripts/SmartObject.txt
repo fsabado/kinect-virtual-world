@@ -7,6 +7,9 @@
 //This smart object is able to interpret command from the user
 //and change attributes automatically
 
+//Object Name:
+string objName = "Smart1";
+
 // list representing colors for prims
 list colorsNumList = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9 ,1.0];
 
@@ -33,8 +36,13 @@ phpMethodSelect(string phpMethod)
 {
      // Register with the php server by sending the address of this prim to the server with 
      // the name of the prim to act as the primary key.
-     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"]
-                           ,"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
+     
+//     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
+     
+     
+     
+        httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"]
+                           ,"primUrl="+objectURL+"&primName="+ objName +"&httpRequest=" + phpMethod);
 }
 
 //Parses the command from the http request for the command interpreter
@@ -53,7 +61,15 @@ list parseHTTPCommand(string body)
                      llList2String(command,i);
         }     
     }
-    return command;
+        
+    integer i;
+    integer s = llGetListLength(newCommand);
+    llSay(0,"Saying Command:");
+    do
+    llOwnerSay(llList2String(newCommand,i));
+    while(s>++i);        
+                     
+    return newCommand;
 }
 
 
@@ -179,17 +195,32 @@ commString(string message){
 //Communication to the object that takes a list
 commList(list command){
     
+
+
     integer length = llGetListLength(command);
     if(length == 0){
         return;
     }
     string comm = llList2String(command,0); //command header
     
+    //Change editable
+    if( comm == "turn"){
+        string button = llList2String(command, 1);
+        if( button == "on"){
+            editable = 1;    
+        }else
+        if( button == "off"){
+            editable = 0;
+        }
+    }else
+    if(editable == 0){
+        return;           
+    }else
     //Change color
     if( comm == "color"){
-        float r = (float) llList2String(command,1);
-        float g = (float) llList2String(command,2);
-        float b = (float) llList2String(command,3);
+        float r = llList2Float(command,1);
+        float g = llList2Float(command,2);
+        float b = llList2Float(command,3);
             
         if(length != 5){
             changeColor( r, g, b,ALL_SIDES); 
@@ -200,38 +231,43 @@ commList(list command){
     }else 
     //Change size
     if( comm == "size"){
-        float x = (float) llList2String(command,1);
-        float y = (float) llList2String(command,2);
-        float z = (float) llList2String(command,3);
+        float x = llList2Float(command,1);
+        float y = llList2Float(command,2);
+        float z = llList2Float(command,3);;
         changeSize(x, y, z);
     }else
     //Change rotation
     if( comm == "rotation"){
-        float x = (float) llList2String(command,1);
-        float y = (float) llList2String(command,2);
-        float z = (float) llList2String(command,3);
+        float x = llList2Float(command,1);
+        float y = llList2Float(command,2);
+        float z = llList2Float(command,3);
         changeRotation(x, y, z);   
     }else
     //Change type
     if( comm == "type"){
         string type =  llList2String(command,1);
         changeObjType(type);
-    }else
-    //Change editable
-    if( comm == "turn"){
-        string button = llList2String(command, 1);
-        if( button == "on"){
-            editable = 1;    
-        }else
-        if( button == "off"){
-            editable = 0;
-        }
     }
+
         
     
 }
 
-
+//------------Debug Code---------//
+// Debug incoming requests to see all header information.
+debug(key id, string method, string body)
+{
+    llOwnerSay(method + ": " + body);
+    list headers = ["x-script-url","x-path-info","x-query-string",        "x-remote-ip","user-agent"];
+    integer i;
+    for (i=0;i<5;++i)
+    {
+        llOwnerSay(llList2String(headers,i) + ": " + llGetHTTPHeader(id,llList2String(headers,i)));
+    }
+}
+            
+        
+    
 //-------------States------------//
 default
 {
@@ -255,6 +291,7 @@ default
         //Waiting for commands
         llListen(0,"",llGetOwner(),"");
         
+        phpMethodSelect("removePrim");
     }
 
     //When regions change, the URLs are invalidated
@@ -337,9 +374,10 @@ default
         }else 
         if (method == "POST") 
         {
+            llSay(0,"POST Method Invoked");
             // An incoming message was received.
             //llOwnerSay("Received information from the outside: " +                   body);
-            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
+            
             llSay(0,body);
             
             //Parse the command such that the object can understand
@@ -351,10 +389,46 @@ default
                 //Sending command to the command interpreter
                 commList(comm);    
             }
+            
+            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
                 
+        }else 
+        if( method == "GET"){
+             
+            llSay(0,"GET Method Invoked");
+            llSay(0,"Body:" + body);
+            
+            // Process a status update by parsing the query string
+            string t = llGetHTTPHeader(id,"x-query-string");
+            list l = llParseString2List(t,["?","=","&"],[]);
+                
+            llSay(0,"Query:" + t);
+            
+            list headers = [ "x-script-url", "x-path-info", "x-query-string", "x-remote-ip", "user-agent" ];
+            integer pos = ~llGetListLength(headers);
+            while( ++pos )
+            {
+                string header = llList2String(headers, pos);
+                llOwnerSay(header + ": " + llGetHTTPHeader(id, header));
+            }
+            llOwnerSay( "body: " + body);
+             
+        
+            //Parse the command such that the object can understand
+            list comm = parseHTTPCommand(t);
+            if( llGetListLength(comm) == 0){
+                llSay(0,"Invalid argument number");
+            }else
+            {
+                //Sending command to the command interpreter
+                commList(comm);    
+            }
+               
+             llHTTPResponse(id, 200, "Command Succeeded");  
         }else 
         {
             // An incoming message has come in using a method that has not been anticipated.
+                        llSay(0,body);
             llHTTPResponse(id,405,"Unsupported Method");
         }
         
