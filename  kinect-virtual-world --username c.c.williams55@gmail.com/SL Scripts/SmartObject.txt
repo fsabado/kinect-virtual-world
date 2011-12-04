@@ -10,6 +10,17 @@
 //Object Name:
 string objName = "Smart1";
 
+//Colors
+vector white   = <1.0, 1.0, 1.0>;
+vector grey    = <0.5, 0.5, 0.5>;
+vector black   = <0.0, 0.0, 0.0>;
+vector red     = <1.0, 0.0, 0.0>;
+vector green   = <0.0, 1.0, 0.0>;
+vector blue    = <0.0, 0.0, 1.0>;
+vector yellow  = <1.0, 1.0, 0.0>;
+vector cyan    = <0.0, 1.0, 1.0>;
+vector magenta = <1.0, 0.0, 1.0>;
+
 // list representing colors for prims
 list colorsNumList = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9 ,1.0];
 
@@ -37,12 +48,11 @@ phpMethodSelect(string phpMethod)
      // Register with the php server by sending the address of this prim to the server with 
      // the name of the prim to act as the primary key.
      
-//     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
+     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
      
      
      
-        httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"]
-                           ,"primUrl="+objectURL+"&primName="+ objName +"&httpRequest=" + phpMethod);
+    //httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"] ,"primUrl="+objectURL+"&primName="+ objName +"&httpRequest=" + phpMethod);
 }
 
 //Parses the command from the http request for the command interpreter
@@ -382,6 +392,7 @@ default
             
             //Parse the command such that the object can understand
             list comm = parseHTTPCommand(body);
+            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
             if( llGetListLength(comm) == 0){
                 llSay(0,"Invalid argument number");
             }else
@@ -390,7 +401,7 @@ default
                 commList(comm);    
             }
             
-            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
+
                 
         }else 
         if( method == "GET"){
@@ -413,7 +424,7 @@ default
             }
             llOwnerSay( "body: " + body);
              
-        
+            llHTTPResponse(id, 200, "Command Succeeded");  
             //Parse the command such that the object can understand
             list comm = parseHTTPCommand(t);
             if( llGetListLength(comm) == 0){
@@ -424,7 +435,7 @@ default
                 commList(comm);    
             }
                
-             llHTTPResponse(id, 200, "Command Succeeded");  
+
         }else 
         {
             // An incoming message has come in using a method that has not been anticipated.
