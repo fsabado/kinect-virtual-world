@@ -1,49 +1,30 @@
-integer numberTextures = 0;
-integer currentTexture = 0;
-
-
-//Slideshow but requires money to upload custom pictures
-/*
-default
-{
-    state_entry()
-    {
-        numberTextures = llGetInventoryNumber(INVENTORY_TEXTURE);
-    }
-
-    touch_start(integer who)
-    {
-        llSetTexture(llGetInventoryName(INVENTORY_TEXTURE, currentTexture), ALL_SIDES);
-        if (currentTexture < numberTextures -1)
-            currentTexture++;
-        else
-            currentTexture = 0;
-    }
-
-    changed(integer what)
-    {
-        if (what & CHANGED_INVENTORY)
-            llResetScript();
-    }
-}
-    */
-
 // Author: Francis Sabado and Christian Williams
 // Second Life Modeling Project
 // Fall 2011
 // Artificial Intelligence Project
 
+//GameCondition
+//This script acts as the game condition user interface
+//for the kinect modeling game
+//This object shows the user whether the user won.
+//Red means incorrect.
+//Greans means correct.(Win)
 
 //This smart object is able to interpret command from the user
 //and change attributes automatically
+
+//Defined colors for the object.
 vector red = <1.0, 0, 0>;
 vector green = < 0, 1.0, 0>;
-vector black = < 0, 0, 0>;
+vector black = < 0, 0,0>;
+
 
 //--------HTTP Functions---------//
 
     //User Variables
 string URL = "http://turing.csce.uark.edu/~ccw005/SecondLifeServer.php";
+string gameTitle = "Kinect Second Life Modeler";
+string winMessage = "Congratulations!\nYou win the game!";
 key httpkey;
 key requestURL;
 string objectURL;
@@ -58,7 +39,7 @@ phpMethodSelect(string phpMethod)
      httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
      
      
-     
+//Uncomment if you want predefined names for objects in the database.
 //        httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"]
 //                          ,"primUrl="+objectURL+"&primName="+ objName +"&httpRequest=" + phpMethod);
 }
@@ -82,7 +63,7 @@ list parseHTTPCommand(string body)
         
     integer i;
     integer s = llGetListLength(newCommand);
-    llSay(0,"Saying Command:");
+    //llSay(0,"Saying Command:");
     do
     llOwnerSay(llList2String(newCommand,i));
     while(s>++i);        
@@ -101,7 +82,7 @@ integer editable = 1; // Denote if could be edited; 1 = true , 0 = false
 changeColor(float r, float g, float b, integer side)
 {
     vector color = < r, g, b>;
-    llSay(0,"Changing color");
+    //llSay(0,"Changing color");
     llSetColor(color,side);
 }
 
@@ -171,7 +152,8 @@ default
 {
     state_entry()
     {
-        llSetText("PRIM MODELING GAME",black,1);
+        llSetText(gameTitle,black,1);
+        llSetColor(red,ALL_SIDES);
         
         // get the number of urls for the region.
         integer freeurls = llGetFreeURLs();
@@ -200,33 +182,45 @@ default
             //Request new URL
             llRequestURL();
         }
+        if(What & CHANGED_COLOR){
+            vector currColor = llGetColor(ALL_SIDES);
+            if( currColor == green){
+                llSetText(winMessage,black,1);
+            }else if(currColor == red){
+                llSetText(gameTitle,black,1);
+            }
+        }
     }    
     touch_start(integer total_number)
     {
         //state touched;
-    }
-    
+    }   
+            
     //Command Listener
     //Takes command if editable is 1, ignores if 0 unless turning on
     listen(integer channel, string name, key id, string message)
     {
+        //remove prim from database
         if(message == "remove")
        {
             phpMethodSelect("removePrim");
        }else
+        //register prim to database
        if(message == "register")      
        {     
             phpMethodSelect("registerPrim");
        }else
+        //get url from database
        if(message == "url")
        {
             phpMethodSelect("getPrimUrl");    
        }else
+       //get prim list from database
        if(message == "list")
        {
             phpMethodSelect("getPrimList");    
        }
-        
+        //Edit the setting if the object accepts messages from user
         if( editable == 1){
             llSay(0,"Interpreting: " + message);
             commString(message); //Command is sent interpreter
@@ -305,6 +299,7 @@ default
             
             list headers = [ "x-script-url", "x-path-info", "x-query-string", "x-remote-ip", "user-agent" ];
             integer pos = ~llGetListLength(headers);
+             //Output heading for debugging
             while( ++pos )
             {
                 string header = llList2String(headers, pos);
