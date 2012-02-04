@@ -35,7 +35,7 @@ list colorsNumList = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9 ,1.0];
 //--------HTTP Functions---------//
 
     //User Variables
-string URL = "http://turing.csce.uark.edu/~ccw005/SecondLifeServer.php";
+string URL = "http://turing.csce.uark.edu/~ccw005/AngryPrimsServer.php";
 key httpkey;
 key requestURL;
 string objectURL;
@@ -54,13 +54,10 @@ float randomTenthsFloat()
 phpMethodSelect(string phpMethod)
 {
      // Register with the php server by sending the address of this prim to the server with 
-     // the name of the prim to act as the primary key.
+     // the Url of the prim to act as the primary key.
      
      httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
      
-     
-     
-    //httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"] ,"primUrl="+objectURL+"&primName="+ objName +"&httpRequest=" + phpMethod);
 }
 
 //Parses the command from the http request for the command interpreter
@@ -332,6 +329,40 @@ commList(list command){
         float y = llList2Float(command,2);
         float z = llList2Float(command,3);
         changePosition(x, y, z);
+    }else
+    // set all the paramaters
+    if( comm == "alldata" ){
+     
+        string type =  llList2String(command,1);
+        changeObjType(type);
+    
+        float px = llList2Float(command,2);
+        float py = llList2Float(command,3);
+        float pz = llList2Float(command,4);
+        changePosition(px, py, pz);
+    
+        float sx = llList2Float(command,5);
+        float sy = llList2Float(command,6);
+        float sz = llList2Float(command,7);;
+        changeSize(sx, sy, sz);
+                
+        float rx = llList2Float(command,8);
+        float ry = llList2Float(command,9);
+        float rz = llList2Float(command,10);
+        changeRotation(rx, ry, rz); 
+                
+        float cr = llList2Float(command,11);
+        float cg = llList2Float(command,12);
+        float cb = llList2Float(command,13);
+            
+        if(length != 5){
+            changeColor( cr, cg, cb,ALL_SIDES); 
+        }else{
+            integer sides = (integer) llList2String(command,4);
+            changeColor( cr, cg, cb, sides);
+        }     
+        
+        
     }
 
         
@@ -403,7 +434,7 @@ default
         //Waiting for commands
         llListen(0,"",llGetOwner(),"");
         
-        phpMethodSelect("removePrim");
+        
     }
 
     //When regions change, the URLs are invalidated
@@ -439,8 +470,12 @@ default
        if(message == "list")
        {
             phpMethodSelect("getPrimList");    
-       }
-        
+       }else
+        if(message == "delete")
+       {
+            phpMethodSelect("deletePrims");    
+       } 
+       
         if( editable == 1){
             llSay(0,"Interpreting: " + message);
             commString(message); //Command is sent interpreter
@@ -474,8 +509,7 @@ default
             // An URL has been assigned to me.
             llOwnerSay("Obtained URL: " + body);
             objectURL = body;
-            // register the prim with the server
-            phpMethodSelect("registerPrim");   
+               
             requestURL = NULL_KEY;
         }else 
         if ((method == URL_REQUEST_DENIED) && (id == requestURL)) 
