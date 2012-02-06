@@ -1,0 +1,21 @@
+default
+{
+    state_entry() // "What to do when the script starts"
+    {
+        llSensorRepeat("grav", NULL_KEY, ACTIVE|PASSIVE|SCRIPTED, 3.0, PI, 0.05); // start a sensor
+    }
+    
+    sensor(integer total) // "What to do when something fired the sensor"
+    {
+        
+        
+       llMessageLinked(LINK_THIS, 0, "move", NULL_KEY);
+       
+        
+    }
+    
+    no_sensor() // "What to do when the sensor didn't find anything"
+    {
+        llSensorRepeat("grav", NULL_KEY, ACTIVE|PASSIVE|SCRIPTED, 3.0, PI, 0.05); // "call another sensor"
+    }
+}
