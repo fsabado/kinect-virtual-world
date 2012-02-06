@@ -1,0 +1,28 @@
+default
+{
+    state_entry()
+    {
+       
+       
+        llSensorRepeat("", "", AGENT, 2, PI, 0.2);
+    }
+    
+    sensor(integer num_detected)
+    {
+        vector pos;
+        
+        
+                pos = llDetectedPos(0); 
+            
+             llLookAt( pos + <0.0, 0.0, 0.5>, 1.0, 0.3 );
+            
+        }
+        
+    
+
+    no_sensor()
+    {
+    llSensorRepeat("", "", AGENT, 10, PI, 0.2);
+    }
+    
+}
