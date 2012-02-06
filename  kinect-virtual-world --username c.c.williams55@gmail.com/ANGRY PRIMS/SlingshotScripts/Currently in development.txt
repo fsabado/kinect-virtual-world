@@ -1,0 +1,3 @@
+http://wiki.secondlife.com/wiki/LlMessageLinked
+
+Script messaging mechanism.
