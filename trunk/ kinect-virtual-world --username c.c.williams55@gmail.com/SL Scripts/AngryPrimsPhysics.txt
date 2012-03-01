@@ -1,0 +1,631 @@
+// Author: Francis Sabado and Christian Williams
+// Second Life Modeling Project
+// Fall 2011
+// Artificial Intelligence Project
+
+
+//This smart object is able to interpret command from the user
+//and change attributes automatically
+
+//Object Name:
+string objName = "GameObject";
+
+//Colors
+vector white   = <1.0, 1.0, 1.0>;
+vector grey    = <0.5, 0.5, 0.5>;
+vector black   = <0.0, 0.0, 0.0>;
+vector red     = <1.0, 0.0, 0.0>;
+vector green   = <0.0, 1.0, 0.0>;
+vector blue    = <0.0, 0.0, 1.0>;
+vector yellow  = <1.0, 1.0, 0.0>;
+vector cyan    = <0.0, 1.0, 1.0>;
+vector magenta = <1.0, 0.0, 1.0>;
+
+// list representing colors for prims
+list colorsNumList = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9 ,1.0];
+
+
+
+// Map load physics on timer vars
+float gap = 15.0;
+integer counter = 0;
+
+
+
+
+
+//--------HTTP Functions---------//
+
+    //User Variables
+string URL = "http://turing.csce.uark.edu/~ccw005/AngryPrimsServer.php";
+key httpkey;
+key requestURL;
+string objectURL;
+integer listen_remove;
+
+
+
+
+
+
+
+
+// get a random float from a list of floats
+float randomTenthsFloat()
+{
+    // randomize the list of floats
+    list shuffled = llListRandomize(colorsNumList,1);
+    // return this random float
+    return llList2Float(shuffled,0); 
+}
+
+// send this objects information to the php server.
+phpMethodSelect(string phpMethod)
+{
+     // Register with the php server by sending the address of this prim to the server with 
+     // the Url of the prim to act as the primary key.
+     
+     httpkey = llHTTPRequest(URL,[HTTP_METHOD,"POST",HTTP_MIMETYPE,"application/x-www-form-urlencoded"],"primUrl="+objectURL+"&primName="+llGetObjectName()+"&httpRequest=" + phpMethod);
+     
+}
+
+//Parses the command from the http request for the command interpreter
+list parseHTTPCommand(string body)
+{
+    list command = llParseString2List(body, ["&","="],[]);
+    list newCommand = [];
+    integer numCommand = llGetListLength(command);
+    if(numCommand % 2 != 0 )
+    {
+        return [];
+    }else{
+        integer i = 1;
+        for( ; i < numCommand; i = 2 + i){
+            newCommand = (newCommand =[]) + newCommand +
+                     llList2String(command,i);
+        }     
+    }
+        
+    integer i;
+    integer s = llGetListLength(newCommand);
+    llSay(0,"Saying Command:");
+    do
+    llOwnerSay(llList2String(newCommand,i));
+    while(s>++i);        
+                     
+    return newCommand;
+}
+
+
+
+
+
+
+
+//-----Default Parameters for Object Type-----//
+integer hole_shape = 0; 
+vector cut = < 0, 1, 0>;
+     //x < y (0 to 1.0), must be .5 difference; z ignored
+float hollow = 0.0;
+    //0.0 = solid , .95 max hollow
+vector twist = < 0, 0, 0>;
+    //-.5(-180) to .5(+180) ; x,y (z ignored)
+vector top_size = < 1, 1, 0>;
+    //0 = top  fully tapered, 1.0 = no tapering, 2.0 = bot full tapered, z ignored
+vector top_shear = < 0, 0, 0>;
+    //-.5 to .5 , x and y (z ignored)
+vector dimple = < 0, 1, 0>;
+    //0 to 1.0, x must be at least .05 less; only x and y
+vector hole_size = < .25, .25, 0>;
+    // x = (.05 to 1.0); y = .05 (large) to .5 (no hole)
+vector advanced_cut = < 0, 1, 0>;
+    //(0.0 to 1.0), x must be at least .05 smaller, only x and y
+vector taper = < 0, 0, 0>;
+    //-1.0 to 1.0 for both x and y (z ignored)
+float revolutions = 1;
+    //1.0 to 4.00
+float radius_offset = 0;
+    //depends on holesize.y and revolutions
+float skew = 0;
+    //-1.0 to 1.0
+
+//Combinational list for Object parameters
+list type1 = [hole_shape, cut, hollow, twist, top_size, top_shear];
+    //used for box,cylinder, and prism
+list type2 = [hole_shape, cut, hollow, twist, dimple ];
+    //used for sphere
+list type3 = [hole_shape, cut, hollow, twist, hole_size, top_shear, advanced_cut, taper, revolutions, radius_offset, skew ]; 
+    //used for torus, tube, and ring
+
+//Preferences
+integer editable = 1; // Denote if could be edited; 1 = true , 0 = false
+
+
+
+
+
+
+
+
+//---------------Change Functions--------------//
+//Change Color
+//param: float color( r = red, g = green, b = blue)
+//integer side( Look at the document for possible side values)
+changeColor(float r, float g, float b, integer side)
+{
+    vector color = < r, g, b>;
+    llSay(0,"Changing color");
+    llSetColor(color,side);
+}
+//Change Size
+//param: float size( x, y, z) in meters
+changeSize(float x, float y, float z)
+{
+    vector scale = < x, y, z>;
+    llSetScale(scale);
+}
+//Change Rotation
+//param: float degree rotation( x, y, z)
+changeRotation(float x, float y, float z)
+{
+    vector xyz_angles = <x,y,z>; 
+    // This is to define a 1 degree change
+    
+    vector angles_in_radians = xyz_angles*DEG_TO_RAD; 
+    // Change to Radians
+    
+    rotation rot_xyzq = llEuler2Rot(angles_in_radians); 
+    // Change to a Rotation
+   
+    llSetRot(rot_xyzq);
+}
+//Change Object Type
+//param: string type = { box | cylinder | prism | sphere | torus | ring | tube}
+changeObjType(string type)
+{
+    //Box Type
+    if(type == "box"){
+        llSetPrimitiveParams([PRIM_TYPE, PRIM_TYPE_BOX ]
+            + type1 );   
+    }else
+    //Cylinder Type
+    if(type == "cylinder"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_CYLINDER]
+            + type1 );
+    }else
+    //Prism Type
+    if(type == "prism"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_PRISM]
+            + type1 ); 
+    }else
+    //Sphere Type
+    if(type == "sphere"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_SPHERE]
+            + type2 );   
+    }else
+    //Torus Type
+    if(type == "torus"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TORUS]
+            + type3 ); 
+    }else
+    //Ring Type
+    if(type == "ring"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_RING]
+            + type3 );    
+    }else
+    //Tube Type
+    if(type == "tube"){
+        llSetPrimitiveParams( [PRIM_TYPE, PRIM_TYPE_TUBE]
+            + type3 );    
+    }
+}
+// change object position
+changePosition(float x, float y, float z)
+{
+        
+        vector desiredPos = < x, y, z >;
+        float dx = desiredPos.x;
+        float dy = desiredPos.y;
+        float dz = desiredPos.z;
+    
+        vector currentPos = llGetPos();
+        float cx = currentPos.x;
+        float cy = currentPos.y;
+        float cz = currentPos.z;
+        
+        float diffx = 0;
+        float diffy = 0;
+        float diffz = 0;
+    do
+    {
+        currentPos = llGetPos();
+        cx = currentPos.x;
+        cy = currentPos.y;
+        cz = currentPos.z;
+              
+        llSetPos(desiredPos);
+        
+        diffx = cx-dx;
+        diffy = cy-dy;
+        diffz = cz-dz;
+    
+    }
+    while( (llFabs(diffx) > 10) || (llFabs(diffy) > 10) || (llFabs(diffz) > 10)  );
+    
+
+   
+    llSay(0,"Changing Postion");
+    llSetPos(desiredPos);
+    
+}
+    
+
+
+
+
+
+
+
+
+
+
+
+//--------Communcation and Command Interpreter-------//
+//Communication to the object that takes a string
+commString(string message){
+    list command = llParseString2List(message,[" "],[]); //Parse command
+    commList(command);
+}
+//Communication to the object that takes a list
+commList(list command){
+    
+
+
+    integer length = llGetListLength(command);
+    if(length == 0){
+        return;
+    }
+    string comm = llList2String(command,0); //command header
+    
+    //Change editable
+    if( comm == "turn"){
+        string button = llList2String(command, 1);
+        if( button == "on"){
+            editable = 1;    
+        }else
+        if( button == "off"){
+            editable = 0;
+        }
+    }else
+    if(editable == 0){
+        return;           
+    }else
+    //Change color
+    if( comm == "color"){
+        float r = llList2Float(command,1);
+        float g = llList2Float(command,2);
+        float b = llList2Float(command,3);
+            
+        if(length != 5){
+            changeColor( r, g, b,ALL_SIDES); 
+        }else{
+            integer sides = (integer) llList2String(command,4);
+            changeColor( r, g, b, sides);
+        }     
+    }else 
+    //Change size
+    if( comm == "size"){
+        float x = llList2Float(command,1);
+        float y = llList2Float(command,2);
+        float z = llList2Float(command,3);;
+        changeSize(x, y, z);
+    }else
+    //Change rotation
+    if( comm == "rotation"){
+        float x = llList2Float(command,1);
+        float y = llList2Float(command,2);
+        float z = llList2Float(command,3);
+        changeRotation(x, y, z);   
+    }else
+    //Change type
+    if( comm == "type"){
+        string type =  llList2String(command,1);
+        changeObjType(type);
+    }else
+    //Change position
+    if( comm == "position" ){
+        float x = llList2Float(command,1);
+        float y = llList2Float(command,2);
+        float z = llList2Float(command,3);
+        changePosition(x, y, z);
+    }else
+    // set all the paramaters
+    if( comm == "alldata" ){
+     
+        string type =  llList2String(command,1);
+        changeObjType(type);
+    
+        float px = llList2Float(command,2);
+        float py = llList2Float(command,3);
+        float pz = llList2Float(command,4);
+        changePosition(px, py, pz);
+    
+        float sx = llList2Float(command,5);
+        float sy = llList2Float(command,6);
+        float sz = llList2Float(command,7);;
+        changeSize(sx, sy, sz);
+                
+        float rx = llList2Float(command,8);
+        float ry = llList2Float(command,9);
+        float rz = llList2Float(command,10);
+        changeRotation(rx, ry, rz); 
+                
+        float cr = llList2Float(command,11);
+        float cg = llList2Float(command,12);
+        float cb = llList2Float(command,13);
+            
+        if(length != 5){
+            changeColor( cr, cg, cb,ALL_SIDES); 
+        }else{
+            integer sides = (integer) llList2String(command,4);
+            changeColor( cr, cg, cb, sides);
+        }     
+        
+        
+    }
+
+        
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+//------------Debug Code---------//
+// Debug incoming requests to see all header information.
+debug(key id, string method, string body)
+{
+    llOwnerSay(method + ": " + body);
+    list headers = ["x-script-url","x-path-info","x-query-string",        "x-remote-ip","user-agent"];
+    integer i;
+    for (i=0;i<5;++i)
+    {
+        llOwnerSay(llList2String(headers,i) + ": " + llGetHTTPHeader(id,llList2String(headers,i)));
+    }
+}
+            
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
+//-------------States------------//
+default
+{
+    state_entry()
+    {
+        llSay(0, "Hello, Avatar!");
+        objName = llGetObjectName();
+        
+        // get the number of urls for the region.
+        integer freeurls = llGetFreeURLs();
+        //llSay(0,(string)freeurls);       
+        if(freeurls > 0)
+        {
+             //request a url for this object.
+            requestURL = llRequestURL();
+        }
+        else
+        {
+             llSay(0, "No urls available!");
+        }
+
+        //Waiting for commands
+        llListen(0,"",llGetOwner(),"");
+        
+        
+    }
+
+    //When regions change, the URLs are invalidated
+    //Ask for new URL   
+    changed(integer What) {
+        //Region restarted
+        if (What & CHANGED_REGION_START) {
+            //Request new URL
+            llRequestURL();
+        }
+    }    
+    touch_start(integer total_number)
+    {
+        //state touched;
+    }
+    
+        
+    // Map load timer
+    timer()
+    {
+        ++counter; 
+        llSay(0, (string)counter+" ticks have passed in " + (string)llGetTime() 
+                 + " script seconds.\nEstimated elapsed time: " + (string)(counter * gap));
+        llSetTimerEvent(0);
+        llSetStatus(STATUS_PHYSICS, TRUE);
+    
+    }
+
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+    //Command Listener
+    //Takes command if editable is 1, ignores if 0 unless turning on
+    listen(integer channel, string name, key id, string message)
+    {
+        if(message == "remove")
+       {
+            phpMethodSelect("removePrim");
+       }else
+       if(message == "register")      
+       {     
+            phpMethodSelect("registerPrim");
+       }else
+       if(message == "url")
+       {
+            phpMethodSelect("getPrimUrl");    
+       }else
+       if(message == "list")
+       {
+            phpMethodSelect("getPrimList");    
+       }else
+        if(message == "delete")
+       {
+            phpMethodSelect("deletePrims");    
+       } 
+       
+        if( editable == 1){
+            llSay(0,"Interpreting: " + message);
+            commString(message); //Command is sent interpreter
+        }else{
+            if( message == "turn on"){
+                llSay(0, "Turning On!");
+                editable = 1;
+            }     
+        }         
+    }
+            
+        
+            
+                
+    // get the responce from the server from any interactions
+    http_response(key id, integer status, list meta, string body)
+    {
+         if(httpkey == id)
+         {
+             llSay(0,body);
+         }           
+    }
+     
+    
+    // Parts of the following code method were taken from 
+    // http://wiki.secondlife.com/wiki/LSL_http_server/examples
+    http_request(key id, string method, string body)
+    {
+        if ((method == URL_REQUEST_GRANTED) && (id == requestURL) )
+        {
+            // An URL has been assigned to me.
+            llOwnerSay("Obtained URL: " + body);
+            objectURL = body;
+               
+            requestURL = NULL_KEY;
+        }else 
+        if ((method == URL_REQUEST_DENIED) && (id == requestURL)) 
+        {
+            // I could not obtain a URL
+            llOwnerSay("There was a problem, and an URL was not  assigned: " + body);
+            requestURL = NULL_KEY;
+        }else 
+        if (method == "POST") 
+        {
+            llSay(0,"POST Method Invoked");
+            // An incoming message was received.
+            //llOwnerSay("Received information from the outside: " +                   body);
+            
+            llSay(0,body);
+            
+            // turn off physical prior to moving the object
+            llSetStatus(STATUS_PHYSICS, FALSE);
+            
+            //Parse the command such that the object can understand
+            list comm = parseHTTPCommand(body);
+            
+            
+            // turn on physical, status change complete, is map load compltete?
+            llSetTimerEvent(gap);
+           
+            
+            
+            
+            
+            
+            
+            
+            llHTTPResponse(id,200,"Thank you for calling. All of our operators are busy.");
+            if( llGetListLength(comm) == 0){
+                llSay(0,"Invalid argument number");
+            }else
+            {
+                //Sending command to the command interpreter
+                commList(comm);    
+            }
+            
+
+                
+        }else 
+        if( method == "GET"){
+             
+            llSay(0,"GET Method Invoked");
+            llSay(0,"Body:" + body);
+            
+            // Process a status update by parsing the query string
+            string t = llGetHTTPHeader(id,"x-query-string");
+            list l = llParseString2List(t,["?","=","&"],[]);
+                
+            llSay(0,"Query:" + t);
+            
+            list headers = [ "x-script-url", "x-path-info", "x-query-string", "x-remote-ip", "user-agent" ];
+            integer pos = ~llGetListLength(headers);
+            while( ++pos )
+            {
+                string header = llList2String(headers, pos);
+                llOwnerSay(header + ": " + llGetHTTPHeader(id, header));
+            }
+            llOwnerSay( "body: " + body);
+             
+            llHTTPResponse(id, 200, "Command Succeeded");  
+            //Parse the command such that the object can understand
+            list comm = parseHTTPCommand(t);
+            if( llGetListLength(comm) == 0){
+                llSay(0,"Invalid argument number");
+            }else
+            {
+                //Sending command to the command interpreter
+                commList(comm);    
+            }
+               
+
+        }else 
+        {
+            // An incoming message has come in using a method that has not been anticipated.
+                        llSay(0,body);
+            llHTTPResponse(id,405,"Unsupported Method");
+        }
+        
+    } 
+}
