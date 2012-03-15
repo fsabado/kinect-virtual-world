@@ -1,0 +1,33 @@
+integer open=TRUE;
+default{
+    on_rez(integer p){llResetScript();}
+    link_message(integer link, integer num, string str, key id)
+    {
+        if(str=="shoot")
+        if(open==TRUE){
+            
+          
+            llMessageLinked(LINK_THIS, 0, "grav", NULL_KEY);
+ 
+ llMessageLinked(LINK_THIS, 0, "open", NULL_KEY);
+           
+ llMessageLinked(LINK_ALL_OTHERS, 0, "open", NULL_KEY);
+
+
+            open=FALSE;
+        }
+        else if(open==FALSE){
+            
+          
+            
+           llMessageLinked(LINK_THIS, 0, "close", NULL_KEY);
+ 
+ llMessageLinked(LINK_ALL_OTHERS, 0, "close", NULL_KEY);
+
+         llWhisper(-445,  "kill");
+
+
+            open=TRUE;
+        }
+    }
+}
