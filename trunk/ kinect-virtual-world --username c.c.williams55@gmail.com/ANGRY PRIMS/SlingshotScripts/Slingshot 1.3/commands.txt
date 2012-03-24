@@ -1,0 +1,165 @@
+//Author: Francis Sabado
+//Description: This script is the main command script for the cannon object.
+ 
+ // Rez an object on touch, with relative position, rotation, and velocity all described in the rezzing prim's coordinate system.
+string object = "bulletv6"; // Name of object in inventory
+vector relativePosOffset = <2.5, 0.0, 0.0>; // "Forward" and a little "above" this prim
+vector relativeVel = <1.0, 0.0, 0.0>; // Traveling in this prim's "forward" direction at 1m/s
+rotation relativeRot = <0.707107, 0.0, 0.0, 0.707107>; // Rotated 90 degrees on the x-axis compared to this prim
+integer bulletNum = 0;
+
+integer objLife = 30;
+float velocity = 5;
+string cannonSound = "bomb";
+
+
+//Command Codes
+integer FIRE = 0;
+integer LEFT = 1;
+integer RIGHT = 2;
+integer DOWN = 3;
+integer UP = 4;
+integer POWER_DOWN = 5;
+integer POWER_UP = 6;
+integer SET_ROT = 7;
+integer SET_POWER = 8;
+integer SET_BULLET_NUM = 9;
+
+
+//--------Communication and Command Interpreter-------//
+//Communication to the object that takes a string
+list commString(string message){
+    list command = llParseString2List(message,[" ",","],[]); //Parse command
+    //commList(command);
+    return command;
+}
+//Communication to the object that takes a list
+commList(list command){
+    integer length = llGetListLength(command);
+    if(length == 0){
+        return;
+    }
+    string comm = llList2String(command,0); //command header
+    
+    if( comm == "fire"){
+            //param = command;
+    }
+}
+
+
+fire(){
+        vector t = <0.0, 0.0 ,0.0> * DEG_TO_RAD;
+        rotation def = llEuler2Rot(t);
+ 
+        vector myPos = llGetPos();
+        rotation myRot = llGetRot();
+ 
+        vector rezPos = myPos+relativePosOffset*myRot;
+        vector rezVel = relativeVel*myRot;
+        //rotation rezRot = relativeRot*myRot;
+        rotation rezRot = def*myRot;
+ 
+        
+        llSetLinkPrimitiveParamsFast(2,[PRIM_POINT_LIGHT,TRUE,<255,255,128>,1.0,10.0,0.750]);
+        llSetLinkPrimitiveParamsFast(2,[PRIM_GLOW,ALL_SIDES,0.3]);
+        llSetLinkAlpha(2, 1.0, ALL_SIDES);
+        llSetLinkPrimitiveParamsFast(2,[PRIM_FULLBRIGHT,ALL_SIDES,TRUE]);
+        llPlaySound(cannonSound,1.0);
+        //llRezObject(object, rezPos, rezVel, rezRot, startParam);
+        llRezObject(object,rezPos, llVecNorm(<1,0,0>*myRot)*velocity, def, objLife);
+
+        //llSleep(.1);
+
+        llSetLinkPrimitiveParamsFast(2,[PRIM_GLOW,ALL_SIDES,0.0]);
+        llSetLinkPrimitiveParamsFast(2,[PRIM_FULLBRIGHT,ALL_SIDES,FALSE]);
+        llSetLinkPrimitiveParamsFast(2,[PRIM_POINT_LIGHT,FALSE,<255,255,128>,1.0,10.0,0.750]);
+        llSetLinkAlpha(2, 0.0, ALL_SIDES);
+}
+
+
+default
+{
+    state_entry()
+    {
+    }
+    
+    touch_start(integer a)
+    {
+        //llSay(0, "Touch Fire!");
+        fire();  
+    }
+       
+    on_rez(integer st)
+    {
+        llPreloadSound(cannonSound);
+        llResetScript();   
+    }          
+                 
+    link_message(integer source, integer code, string parameters, key id)
+    {
+        list params = commString(parameters);
+        
+        //llSay( 0 , "code = " + (string) code);
+        if( code == FIRE){
+            //llSay(0, "FIRE!");
+             fire();
+        }else
+        if( code == LEFT ){
+            integer angle = llList2Integer(params,0);
+            rotation new_rot = llGetRot()*llAxisAngle2Rot(<0,0,1>, angle*DEG_TO_RAD);
+            llSetRot(new_rot); 
+        }else
+        if( code == RIGHT ){
+            integer angle = llList2Integer(params,0);
+            rotation new_rot = llGetRot()*llAxisAngle2Rot(<0,0,1>, -angle*DEG_TO_RAD);
+            llSetRot(new_rot);  
+        }else
+        if( code == DOWN ){
+            integer angle = llList2Integer(params,0);
+            rotation z_inc = llEuler2Rot( <0, angle * DEG_TO_RAD , 0> );
+            rotation new_rot =  z_inc*llGetRot();         
+            llSetRot(new_rot);         
+        }else
+        if( code == UP ){
+            integer angle = llList2Integer(params,0);
+            rotation z_inc = llEuler2Rot( <0, -angle * DEG_TO_RAD , 0> );
+            rotation new_rot = z_inc*llGetRot();
+            llSetRot(new_rot);    
+        }else
+        if( code == POWER_DOWN ){
+            integer powerInc = llList2Integer(params,0);
+            if( velocity - powerInc < 0){
+                velocity = 0;
+            }else{
+                velocity -= powerInc;
+            }
+            llSay(0,"Power Level: " + (string) velocity);
+        }else     
+        if( code == POWER_UP ){
+            integer powerInc = llList2Integer(params,0);
+            if( velocity + powerInc > 200){
+                velocity = 200;
+            }else{
+                velocity += powerInc;
+            }    
+            llSay(0,"Power Level: " + (string) velocity);
+        }else
+        if( code == SET_ROT ){
+            integer x = llList2Integer(params,0);
+            integer y = llList2Integer(params,1);
+            integer z = llList2Integer(params,2);
+            vector vRot = <x,y,z>;
+            rotation newRot = llEuler2Rot( vRot * DEG_TO_RAD);
+            llSetRot(newRot);
+        }else
+        if( code == SET_POWER ){
+            float newVelocity = llList2Float(params,0);
+            velocity = newVelocity;
+            llSay(0,"Power Level: " + (string) velocity);
+        }else
+        if( code = SET_BULLET_NUM ){
+            bulletNum = llList2Integer(params,0);        
+        }  
+    }
+}
+
