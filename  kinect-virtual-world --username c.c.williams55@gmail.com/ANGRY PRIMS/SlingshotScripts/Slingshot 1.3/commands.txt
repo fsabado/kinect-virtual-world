@@ -13,6 +13,9 @@ float velocity = 5;
 string cannonSound = "bomb";
 
 
+//Channels
+integer HUDChannel = 7888;
+
 //Command Codes
 integer FIRE = 0;
 integer LEFT = 1;
@@ -154,8 +157,17 @@ default
         }else
         if( code == SET_POWER ){
             float newVelocity = llList2Float(params,0);
-            velocity = newVelocity;
+        
+            if( newVelocity > 200){
+                velocity = 200;
+            }else if( newVelocity < 0){
+                velocity = 0;        
+            }else{
+                velocity = newVelocity;
+            }
             llSay(0,"Power Level: " + (string) velocity);
+            //Send Message to the HUD
+            llSay(HUDChannel, "power " + (string) velocity); 
         }else
         if( code = SET_BULLET_NUM ){
             bulletNum = llList2Integer(params,0);        
