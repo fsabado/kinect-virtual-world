@@ -1,0 +1,93 @@
+//Author: Francis Sabado
+//Cannon Power Level HUD
+        
+vector defaultScale = < .01,.01,.05>;
+float maxY = .6;
+integer maxPower = 200;
+integer HUDChannel = 7888;
+integer listen_handler;
+
+integer currentPower = 0;
+
+//List of currently available commands
+list avCommands = ["power"];
+
+//Parse the string commands
+list commString(string message){
+    list command = llParseString2List(message,[" ",","],[]); 
+    //Parse command
+    //commList(command);
+    return command;
+}
+
+
+
+commandInterpreter(list command){
+    string com = llList2String(command,0);
+    if( com == "power"){
+        integer power = llList2Integer(command,1);
+        //Test Power Values
+        if(power > 200){
+            power = 200;   
+        }else if( power < 0){
+            power = 0;   
+        }
+        
+        currentPower = power;
+        
+        // 0 <= power <= 200;
+        
+        //float y = maxY * power / maxPower;
+        //vector currentScale = llGetScale();
+        //llSetScale( <currentScale.x, y, currentScale.z>);
+        animatePower(power);
+    }
+    
+}
+
+
+animatePower(integer power){
+    float y = maxY * power / maxPower;
+    //llSay(0, (string) y);
+    vector currentScale = llGetScale();
+    float currentY = currentScale.y;
+    //llSay(0, (string) currentY);
+    if( currentY < y){
+        while( currentY < y){
+            llSetScale( <currentScale.x, currentY += .01, currentScale.z>); 
+        }
+    }else{
+        while( currentY >= y){
+            llSetScale( <currentScale.x, currentY -= .01, currentScale.z>); 
+        }
+    }
+    llSetScale( <currentScale.x, y, currentScale.z>);
+}
+
+default
+{
+    state_entry(){
+        llSetScale(defaultScale);
+        llListen( HUDChannel,"","","");
+
+    }
+    touch_start(integer num_detected){
+        //llSay(0,"Touch");
+        //vector currentScale = llGetScale();
+        //vector newScale = <currentScale.x, currentScale.y + .01, currentScale.z>;
+        //llSetScale(newScale);
+        llSay(0,"Power Indicator for Angry Prims");
+        llSay(0,"Current Power: " + (string) currentPower);
+    }
+    listen( integer channel, string name, key id, string message){
+        list command = commString(message);
+        string com = llList2String(command,0);
+        if(~llListFindList(avCommands,(list) com)){
+        //If it exists
+        //This works because ~(-1) == 0
+        //It saves bytecode and is faster than doing != -1
+            commandInterpreter(command);
+        }
+    }
+}
+    
