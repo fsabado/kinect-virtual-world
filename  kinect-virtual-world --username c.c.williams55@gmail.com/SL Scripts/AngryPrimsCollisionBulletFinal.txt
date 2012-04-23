@@ -1,0 +1,101 @@
+// Christian Williams
+// Uark 010537189
+// AngryPrims Capstone II
+// AngryPrimsCollisionBullet
+
+// This script handles the case when the bullet object impacts 
+// the object running this script then transmits information to 
+// the score tracker. This scrip also executes the state changes 
+// for the game by causing the object to dissappear when hit by the bullet.
+
+
+//Change Size
+//param: float size( x, y, z) in meters
+changeSize(float x, float y, float z)
+{
+    vector scale = < x, y, z>;
+    llSetScale(scale);
+}
+
+// change object position
+changePosition(float x, float y, float z)
+{
+        
+        vector desiredPos = < x, y, z >;
+        float dx = desiredPos.x;
+        float dy = desiredPos.y;
+        float dz = desiredPos.z;
+    
+        vector currentPos = llGetPos();
+        float cx = currentPos.x;
+        float cy = currentPos.y;
+        float cz = currentPos.z;
+        
+        float diffx = 0;
+        float diffy = 0;
+        float diffz = 0;
+    do
+    {
+        currentPos = llGetPos();
+        cx = currentPos.x;
+        cy = currentPos.y;
+        cz = currentPos.z;
+              
+        llSetPos(desiredPos);
+        
+        diffx = cx-dx;
+        diffy = cy-dy;
+        diffz = cz-dz;
+    
+    }
+    while( (llFabs(diffx) > 10) || (llFabs(diffy) > 10) || (llFabs(diffz) > 10)  ); 
+   
+    llSetPos(desiredPos);
+    
+}
+    
+
+gameCollision(){
+    
+
+           
+        llSetStatus( STATUS_PHANTOM, TRUE );
+        llSetAlpha(0.0,ALL_SIDES);
+        llSetStatus( STATUS_PHYSICS, FALSE);   
+                    
+        list typeList = llGetPrimitiveParams([PRIM_TYPE]);
+       if( llList2String(typeList, 0) == (string)PRIM_TYPE_SPHERE)
+        {
+            // this object is a sphere score it as such to the score tracker  
+            llShout(5555,"sphere");
+        }
+        else
+        {
+            // this object is not a sphere score it as such to the score tracker    
+            llShout(5555,"regular");
+    
+        }       
+
+         // handle the rest of the collision sequence.
+        changeSize(.3, .3, .3);
+        changePosition(3.942, 247.142, 85.848);  
+        llSetStatus( STATUS_PHANTOM, FALSE );
+        llSetAlpha(1.0, ALL_SIDES);    
+}    
+
+
+
+default
+{
+    state_entry()
+    {
+        llCollisionFilter("bullet","",TRUE);
+    }
+ 
+    collision_start(integer total_number)
+    {
+        llSay(0, "OUCH! Bullet");
+        gameCollision();    
+        
+    }
+}
