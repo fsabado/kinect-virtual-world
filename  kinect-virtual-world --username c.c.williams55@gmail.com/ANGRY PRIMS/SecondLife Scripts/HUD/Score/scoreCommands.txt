@@ -1,0 +1,50 @@
+// XyText Message Map.
+integer SET_LINE_CHANNEL    = 100100; //for multi-cell spanning text
+integer DISPLAY_STRING      = 204000;
+integer DISPLAY_EXTENDED    = 204001;
+integer REMAP_INDICES       = 204002;
+integer RESET_INDICES       = 204003;
+integer SET_CELL_INFO       = 204004;
+
+integer HUDChannel = 7888;
+integer listen_handler;
+
+//Default Score
+integer def = 0;
+
+
+//Commands
+string SCORE = "score";
+
+
+//Parse the string commands
+list commString(string message){
+    list command = llParseString2List(message,[" ",","],[]); 
+    //Parse command
+    //commList(command);
+    return command;
+}
+
+setScore(integer score){
+    llMessageLinked(LINK_SET, DISPLAY_STRING, (string) score, "");
+}
+
+default
+{
+    state_entry()
+    {
+        setScore(0);
+        llListen( HUDChannel,"","","");
+    }
+
+    listen( integer channel, string name, key id, string message){
+        list command = commString(message);
+        string com = llList2String(command,0);
+        if( com == SCORE ){
+            integer _score = llList2Integer(command,1);
+            setScore(_score);
+        }
+    }
+    
+    
+}

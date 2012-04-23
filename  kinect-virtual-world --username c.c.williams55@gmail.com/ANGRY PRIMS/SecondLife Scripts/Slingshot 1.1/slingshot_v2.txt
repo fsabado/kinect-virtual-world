@@ -1,0 +1,164 @@
+string object = "";
+integer person = 0;
+list peopleK = [];
+list peopleN = [];
+integer comHandle = 0;
+list menu_items = [];
+integer mitra = 0;
+list cList = [];
+integer numObjects = 0;
+float V0 = 0;
+string angle = "";
+ 
+list mFwd() {
+    if(mitra+1>llGetListLength(menu_items)) return cList;
+    cList = llListInsertList(llListInsertList(llList2List(menu_items, ++mitra, (mitra+=9)), ["<= Back"], 0), ["Next =>"], 2);
+    return cList;
+} 
+ 
+list mBwd() {
+    if(mitra-19<0) return cList;
+    cList = llListInsertList(llListInsertList(llList2List(menu_items, (mitra-=19), (mitra+=9)), ["<= Back"], 0), ["Next =>"], 2);
+    return cList;
+}
+ 
+default
+{   
+    touch_start(integer total_number)
+    {
+        if(llDetectedKey(0) != llGetOwner()) return;
+        integer itra;
+        list objects = [];
+        for(itra=0, person=0, object="", objects=[], cList=[], menu_items=[], mitra=0; itra<llGetInventoryNumber(INVENTORY_OBJECT); ++itra) {
+            menu_items += llGetInventoryName(INVENTORY_OBJECT, itra);
+        }
+        cList = llListInsertList(llListInsertList(llList2List(menu_items, mitra, (mitra+=9)), ["<= Back"], 0), ["Next =>"], 2);
+        integer comChannel = ((integer)("0x"+llGetSubString((string)llGetOwner(),-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF;
+        comHandle = llListen(comChannel, "", llGetOwner(), "");
+        llDialog(llGetOwner(), "Please choose an object from the inventory:", cList, comChannel);
+    }
+ 
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+ 
+    listen(integer channel, string name, key id, string message) {
+        if(message == "<= Back") {
+            llDialog(id, "Please browse and select:\n", mBwd(), channel);
+            return;
+        }
+        if(message == "Next =>") {
+            llDialog(id, "Please browse and select:\n", mFwd(), channel);
+            return;
+        }
+        integer comChannel = ((integer)("0x"+llGetSubString((string)llGetOwner(),-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF;
+        if(channel == comChannel) {
+            object = message;
+            llSensor("", "", AGENT, 96, TWO_PI);
+        }
+        if(channel == comChannel+1) {
+            person = (integer)message;
+            list am = [];
+            integer itra;
+            for(itra=1; itra<12; ++itra) {
+                am += (string)itra;
+            }
+            am += "Continuous";
+            llListenRemove(comHandle);
+            comHandle = llListen(comChannel+2, "", llGetOwner(), "");
+            llDialog(llGetOwner(), "Please select an amount of charges to fire:\n", am, comChannel+2);
+            return;
+        }
+        if(channel == comChannel+2) {
+            if(message == "Continuous")
+                numObjects = -1;
+            else
+                numObjects = (integer)message;
+            integer itra;
+            list am = [];
+            for(itra=1, cList=[], menu_items=[], mitra=0; itra<1200; ++itra) {
+                menu_items += (string)itra;
+            }
+            cList = llListInsertList(llListInsertList(llList2List(menu_items, mitra, (mitra+=9)), ["<= Back"], 0), ["Next =>"], 2);
+            llListenRemove(comHandle);
+            comHandle = llListen(comChannel+3, "", llGetOwner(), "");
+            llDialog(llGetOwner(), "Please select the velocity in meters/second:\n", cList, comChannel+3);
+            return;
+        }
+        if(channel == comChannel+3) {
+            V0 = (integer) message;
+            llListenRemove(comHandle);
+            comHandle = llListen(comChannel+4, "", llGetOwner(), "");
+            llDialog(llGetOwner(), "Please the possible angles:", ["High", "Low"], comChannel+4);
+            return;
+        }
+        if(channel == comChannel+4) {
+            angle = message;
+            state fire;
+        }
+        llListenRemove(comHandle);
+    }
+ 
+    sensor(integer num) {
+        integer itra;
+        for(itra=0, peopleK=[], peopleN=[]; itra<13; ++itra) {
+            if(llDetectedKey(itra) != NULL_KEY) {
+                peopleK += llDetectedKey(itra);
+                peopleN += (string)itra + ".) " + llDetectedName(itra);
+            }
+        }
+        integer comChannel = ((integer)("0x"+llGetSubString((string)llGetOwner(),-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF;
+        comHandle = llListen(comChannel+1, "", llGetOwner(), "");
+        list val = [];
+        for(itra=0; itra<llGetListLength(peopleN); ++itra) {
+            val += (string) itra;
+        }
+        llDialog(llGetOwner(), "Please select a target:\n"+llDumpList2String(peopleN, "\n"), val, comChannel+1);
+    }
+}
+ 
+state fire {
+    state_entry() {
+        llSetTimerEvent(1.0);
+    }
+    timer() {
+        vector target = llList2Vector(llGetObjectDetails(llList2Key(peopleK, person), [OBJECT_POS]), 0);
+        vector origin = llGetLocalPos();
+        float d?=llVecDist(<target.x,target.y,0>,<origin.x,origin.y,0>);
+        float valSin = 9.81*d?/llPow(V0, 2);
+        if(valSin < -1 || valSin > 1) {
+            llSetTimerEvent(0);
+            llOwnerSay("Not enough velocity to reach target, please increase velocity.");
+            state default;
+        }
+        float low_? = RAD_TO_DEG*llAsin(valSin)/2;
+        float high_? = 90-low_?;
+        rotation q? = ZERO_ROTATION;
+        if(angle == "High") q? = llRotBetween(<1,0,0>,llVecNorm(<target.x-origin.x,target.y-origin.y, d?*llTan(high_? * DEG_TO_RAD) + llFabs(target.z-origin.z)>));
+        else q? = llRotBetween(<1,0,0>,llVecNorm(<target.x-origin.x,target.y-origin.y, d?*llTan(low_? * DEG_TO_RAD) + target.z-origin.z>));
+        float t = 2*V0/9.81;
+        float h_max = llPow(V0, 2)*llPow(llSin(high_?), 2)/(2*9.81);
+        llOwnerSay("---------- FIRE ROUND START ----------");
+        llOwnerSay("+Distance to target: " + (string)d? + "m");
+        llOwnerSay("+Required angle delta to hit: " + (string)low_? + "?");
+        llOwnerSay("+Orientation detlta to target: " + (string)q? + "m");
+        llOwnerSay("+Time to impact: " + (string)t + "s");
+        llOwnerSay("+Maximum flight height: " + (string)h_max + "m");
+        llOwnerSay("----------- FIRE ROUND END -----------");
+        llRezObject(object, llGetLocalPos(), llVecNorm(<1,0,0>*q?)*V0, q?, 0);
+        if(~numObjects != 0) {
+            if(--numObjects == 0) {
+                llSetTimerEvent(0);
+                return;
+            }
+        }
+        llSetTimerEvent(t + llGetRegionTimeDilation());
+    }
+    touch_start(integer num) {
+        if(llDetectedKey(0) != llGetOwner()) return;
+        llOwnerSay("Firing ceased, touch to reconfigure.");
+        state default;
+    }
+}

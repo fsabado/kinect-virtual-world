@@ -1,0 +1,41 @@
+// "Do it all in one script. The moment you add a second script you enter Hell." ~ Adeon's wise old grandfather?
+
+string person;
+vector targetpos;
+float tau = .1;
+integer mute = FALSE;
+
+default
+{
+    link_message(integer link, integer num, string str, key id)
+    {
+        if(str=="move")
+         
+        llSetStatus(STATUS_BLOCK_GRAB|STATUS_PHYSICS, TRUE);
+        vector pos = llGetPos();
+        llSleep(0.1);
+        llMoveToTarget(pos,tau);
+        llSensorRepeat("", llGetOwner(), AGENT, 96, PI, 0.01);
+
+
+    }
+    
+    sensor(integer num)
+    {
+        targetpos = llDetectedPos(0);
+        person = llDetectedName(0);
+        vector pos = llDetectedPos(0);
+        vector offset = llRot2Fwd(llDetectedRot(0))*1.5 + <0,0,0.5>;
+        pos+=offset;
+        llMoveToTarget(pos,tau);
+        
+    
+        
+        
+       //llRotLookAt(llDetectedRot(0), 1, 1);  
+    }
+    
+    //no_sensor() { llOwnerSay("/me was deleted because it went off-world."); llDie(); }
+    
+    
+}
