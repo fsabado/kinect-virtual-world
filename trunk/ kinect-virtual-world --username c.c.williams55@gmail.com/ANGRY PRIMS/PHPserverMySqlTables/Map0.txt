@@ -1,0 +1,23 @@
+create table Map0(
+Id int primary key not null auto_increment,
+Type char(20) not null,
+Pos_X Decimal(6,3) not null,
+Pos_Y Decimal(6,3) not null,
+Pos_Z Decimal(6,3) not null,
+Size_X Decimal(6,3) not null,
+Size_Y Decimal(6,3) not null,
+Size_Z Decimal(6,3) not null,
+Rot_X Decimal(6,3) not null,
+Rot_Y Decimal(6,3) not null,
+Rot_Z Decimal(6,3) not null,
+Color_R Decimal(6,3) not null,
+Color_G Decimal(6,3) not null,
+Color_B Decimal(6,3) not null);
+
+insert into Map0 values(
+null,
+'box',
+4, 245, 85.536,
+0.1, 0.1, 0.1,
+0,0,0,
+1,1,1);
