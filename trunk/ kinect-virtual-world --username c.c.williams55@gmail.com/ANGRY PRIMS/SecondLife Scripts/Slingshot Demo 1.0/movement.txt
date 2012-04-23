@@ -1,0 +1,35 @@
+integer ANGLE_INC = 5;
+
+default
+{
+    state_entry()
+    {
+    }
+                 
+    link_message(integer source, integer num, string message, key id)
+    {
+        //llSay(0,"Received: " + message);
+        //llSay(0,"Hmm");
+        if(message == "left"){
+            //llSay(0,"Yo!");
+            rotation new_rot = llGetRot()*llAxisAngle2Rot(<0,0,1>, ANGLE_INC*DEG_TO_RAD);
+            llSetRot(new_rot); 
+        }
+        if( message == "right"){
+            rotation new_rot = llGetRot()*llAxisAngle2Rot(<0,0,1>, -ANGLE_INC*DEG_TO_RAD);
+            llSetRot(new_rot);  
+        }
+        if( message == "down"){
+            rotation z_inc = llEuler2Rot( <0, ANGLE_INC * DEG_TO_RAD , 0> );
+            rotation new_rot =  z_inc*llGetRot();           
+            
+            llSetRot(new_rot);         
+        }
+        if( message == "up"){
+            rotation z_inc = llEuler2Rot( <0, -ANGLE_INC * DEG_TO_RAD , 0> );
+            rotation new_rot = z_inc*llGetRot();
+            
+            llSetRot(new_rot);    
+        }
+    }
+}
