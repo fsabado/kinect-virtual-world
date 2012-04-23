@@ -71,14 +71,14 @@ default
         llListen( HUDChannel,"","","");
 
     }
-    touch_start(integer num_detected){
+    //touch_start(integer num_detected){
         //llSay(0,"Touch");
         //vector currentScale = llGetScale();
         //vector newScale = <currentScale.x, currentScale.y + .01, currentScale.z>;
         //llSetScale(newScale);
-        llSay(0,"Power Indicator for Angry Prims");
-        llSay(0,"Current Power: " + (string) currentPower);
-    }
+        //llSay(0,"Power Indicator for Angry Prims");
+        //llSay(0,"Current Power: " + (string) currentPower);
+    //}
     listen( integer channel, string name, key id, string message){
         list command = commString(message);
         string com = llList2String(command,0);

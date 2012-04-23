@@ -1,0 +1,77 @@
+// XyText Message Map.
+integer SET_LINE_CHANNEL    = 100100; //for multi-cell spanning text
+integer DISPLAY_STRING      = 204000;
+integer DISPLAY_EXTENDED    = 204001;
+integer REMAP_INDICES       = 204002;
+integer RESET_INDICES       = 204003;
+integer SET_CELL_INFO       = 204004;
+
+integer HUDChannel = 7888;
+integer listen_handler;
+
+//Default Score
+integer def = 0;
+
+//Colors
+vector white   = <1.0, 1.0, 1.0>;
+vector grey    = <0.5, 0.5, 0.5>;
+vector black   = <0.0, 0.0, 0.0>;
+vector red     = <1.0, 0.0, 0.0>;
+vector green   = <0.0, 1.0, 0.0>;
+vector blue    = <0.0, 0.0, 1.0>;
+vector yellow  = <1.0, 1.0, 0.0>;
+vector cyan    = <0.0, 1.0, 1.0>;
+vector magenta = <1.0, 0.0, 1.0>;
+
+
+//Commands
+integer CLEARED = 1;
+integer NOT_CLEARED = 0;
+integer RESET = -1;
+string COM_CLEARED = "cleared";
+
+
+
+//Parse the string commands
+list commString(string message){
+    list command = llParseString2List(message,[" ",","],[]); 
+    //Parse command
+    //commList(command);
+    return command;
+}
+
+setText(string text){
+    llMessageLinked(LINK_SET, DISPLAY_STRING, text, "");
+}
+
+default
+{
+    state_entry()
+    {
+        setText("");
+        llListen( HUDChannel,"","","");
+    }
+
+    listen( integer channel, string name, key id, string message){
+        list command = commString(message);
+        string com = llList2String(command,0);
+        
+        integer len = llGetListLength(command);
+        if( com == COM_CLEARED && len == 2){
+            integer _cleared = llList2Integer(command,1);
+            if( _cleared == CLEARED ){
+                llSetColor(green,ALL_SIDES);
+                setText(" Cleared!");
+            }else if ( _cleared == NOT_CLEARED ){
+                llSetColor(red,ALL_SIDES);
+                setText("Try Again?");
+            }else if( _cleared == RESET ){
+                setText("");   
+            }
+        }else{
+            setText("");   
+        }
+    }
+    
+    
+}
