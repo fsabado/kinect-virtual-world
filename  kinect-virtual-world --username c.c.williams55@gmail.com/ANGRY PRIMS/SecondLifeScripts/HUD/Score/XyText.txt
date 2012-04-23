@@ -16,7 +16,7 @@ integer DISPLAY_EXTENDED    = 204001;
 integer REMAP_INDICES       = 204002;
 integer RESET_INDICES       = 204003;
 integer SET_CELL_INFO       = 204004;
-integer SET_THICKNESS       = 204006;
+integer SET_THICKNESS       = 204006; 
 integer SET_COLOR           = 204007;
  
 // This is an extended character escape sequence.
