@@ -1,0 +1,105 @@
+// Christian Williams
+// Uark 010537189
+// AngryPrims Capstone II
+// AngryPrimsScoreTracker
+
+// This script listens for gameobjects to signal that either a new game has started or 
+// the object has been destroyed and needs to be scored and transmits the score and game
+// state to the player HUD objects for user interaction. 
+
+integer currentScore;
+integer currentEnemies;
+integer bulletsFired;
+integer maxBullets = 4;
+integer maxEnemies = 5;
+
+integer enemyValue = 10000;
+integer regularValue = 1000;
+integer bulletValue = 3000;
+
+integer counter;
+
+
+gameOver()
+{
+       if(currentEnemies >= maxEnemies)
+       {
+            llShout(7888,"cleared 1");     
+       }
+       else
+       {
+            llShout(7888, "cleared 0");    
+       }
+}
+
+
+default
+{
+    state_entry()
+    {
+        llListen(5555,"","","");     
+    }
+
+    touch_start(integer total_number)
+    {
+        llSay(0,"Current Score:" + (string)currentScore);
+    }
+    
+     listen(integer channel, string name, key id, string message)
+    {
+        if(message == "sphere" && bulletsFired <= maxBullets )
+       {
+            
+            currentScore = currentScore + enemyValue;
+            currentEnemies++;
+            llShout(7888, "score " + (string)currentScore);
+            // check if game is over
+            if(currentEnemies >= maxEnemies)
+            {
+               llSetTimerEvent(5);      
+            }
+       }
+       
+       if(message == "regular" && bulletsFired <= maxBullets )
+       {
+           
+            currentScore = currentScore + regularValue;
+            llShout(7888, "score " + (string)currentScore);    
+            if(currentEnemies>= maxEnemies)
+                llSetTimerEvent(5);
+       }
+   
+       if(message == "scorereset" )
+       {    
+            currentScore = 0;
+            bulletsFired = 0;
+            currentEnemies = 0;
+            llShout(7888, "score " + (string)currentScore);
+            llShout(7888, "cleared -1");
+       }
+       
+       if(message == "bullet" && bulletsFired <= maxBullets )
+       {
+            currentScore = currentScore - bulletValue;
+            bulletsFired++;    
+            llShout(7888, "score " + (string)currentScore);
+            llSay(0,"score " + (string)currentScore);
+       }
+       
+       // check if game is over
+      if(bulletsFired >= maxBullets)
+       {
+           llSetTimerEvent(10);  
+       }
+       
+    }
+    
+    // used to check if it is the end of the game
+     timer()
+    {
+        ++counter;       
+        gameOver();
+        llSetTimerEvent(0);   
+    }
+        
+}
