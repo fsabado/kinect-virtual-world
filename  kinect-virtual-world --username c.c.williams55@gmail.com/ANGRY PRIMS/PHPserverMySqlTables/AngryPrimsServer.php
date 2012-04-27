@@ -39,7 +39,7 @@ function getPrimList()
 	echo "|";	
 }
 
-
+// used to pair propterties to prims and send to secondlife, Map transitons
 function PairPrimProperties($tableMapNumber)
 {
 	
@@ -70,7 +70,7 @@ function PairPrimProperties($tableMapNumber)
 	
 }
 
-
+// used to set a default location for the prim pool to ensure starting from a known state
 function PreMapPostion()
 {
 	
@@ -95,7 +95,7 @@ function PreMapPostion()
 	
 }
 
-
+// get the address of the cannon and send to the client
 function getMapList()
 {
    	$Query = "select * from SecondLifePrims where PrimName = 'cannon'";
