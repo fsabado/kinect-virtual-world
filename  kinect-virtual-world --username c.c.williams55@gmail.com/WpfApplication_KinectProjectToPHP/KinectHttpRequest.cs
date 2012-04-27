@@ -129,6 +129,14 @@ namespace WpfApplication_KinectProjectToPHP
             this._commSlPhpDel.BeginInvoke(postString, null, null);
         }
 
+        /// <summary>
+        /// Used to directly control the special cannon object in SL.
+        /// </summary>
+        /// <param name="fire"></param>
+        /// <param name="X"></param>
+        /// <param name="Y"></param>
+        /// <param name="Z"></param>
+        /// <param name="powerUp"></param>
         public void CannonControlSL(int fire, double X, double Y, double Z, double powerUp)
         {
             // specific to the SL code on the receiving end.
