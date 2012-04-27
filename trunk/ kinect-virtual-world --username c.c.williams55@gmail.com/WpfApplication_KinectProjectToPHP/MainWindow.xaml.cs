@@ -29,7 +29,15 @@ namespace WpfApplication_KinectProjectToPHP
 {    
     
     /// <summary>
+    /// Christian Williams and Aaron Mahmoud
+    /// University of Arkansas 010537189
+    /// ccw005@uark.edu
     /// Interaction logic for MainWindow.xaml
+    /// and setup of the Kinect Runtime audio engine and skeleton
+    /// detection.
+    /// 
+    /// This window is used for debugging purposes only. 
+    /// 
     /// </summary>
     public partial class MainWindow : Window
     {

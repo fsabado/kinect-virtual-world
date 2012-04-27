@@ -16,7 +16,7 @@ namespace WpfApplication_KinectProjectToPHP
 
 
     /// <summary>
-    /// Christian Williams 
+    /// Christian Williams and Aaron Mahmoud
     /// University of Arkansas 010537189
     /// ccw005@uark.edu
     /// 
